@@ -1,0 +1,59 @@
+Copyright (c) 2026 Lucas Veríssimo de Oliveira. All rights reserved.
+
+VIEW-ONLY LICENSE
+
+This repository is made publicly available solely for portfolio and
+technical-demonstration purposes. It is NOT free software or open source
+software, despite the source code being publicly visible.
+
+1. PERMISSIONS
+
+   Only the following is permitted:
+   a) Viewing the source code of this repository through the GitHub
+      interface (or an equivalent platform) for the purpose of portfolio
+      evaluation, recruitment, or technical review.
+
+2. RESTRICTIONS
+
+   Without the author's prior written authorization, the following are
+   expressly prohibited:
+   a) Copying, reproducing, downloading (including cloning/forking for
+      retention), or storing this code, in whole or in part;
+   b) Using, running, installing, or deploying this code, in whole or in
+      part, in any environment or for any purpose;
+   c) Modifying, adapting, or creating derivative works based on this
+      code;
+   d) Redistributing, sublicensing, publishing, or otherwise making this
+      code available, in whole or in part, in any other repository,
+      product, or medium;
+   e) Using this code, in whole or in part, in personal, academic, or
+      commercial projects, whether one's own or belonging to third
+      parties;
+   f) Using this code to train, fine-tune, or evaluate machine learning
+      or artificial intelligence models.
+
+3. NO LICENSE TO USE
+
+   Nothing in this document shall be construed as granting, by
+   implication, estoppel, or otherwise, any license or right under any
+   patent, trademark, copyright, or other intellectual property right of
+   the author, beyond the viewing right described in Section 1.
+
+4. DISCLAIMER OF WARRANTY
+
+   THIS CODE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED. THE AUTHOR SHALL NOT BE LIABLE FOR ANY DAMAGES ARISING FROM
+   UNAUTHORIZED USE OF THIS CODE.
+
+5. CONTACT
+
+   To request permission for use beyond the scope of this license, please
+   contact the author directly.
+
+---
+
+Note: because this is not an Open Source Initiative (OSI)-approved
+license, this repository must not be labeled as "open source." In the
+absence of an explicit license, copyright law already reserves all rights
+to the author by default — this file simply makes that condition explicit
+and spells out what is (and is not) permitted.
