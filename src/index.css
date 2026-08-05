@@ -1,0 +1,189 @@
+@import "tailwindcss";
+
+/*
+  Design language: "paper ledger".
+  Money apps default to one of two clichés: sterile bank-blue, or a
+  neon-on-black trading-terminal look. Centsible borrows instead from the
+  object it's actually replacing — a paper ledger. Figures are set in a
+  monospaced, tabular face and right-aligned like a statement column;
+  income is set in ledger-emerald ink, expenses in ledger-wine ink (the
+  original meaning of "in the red"); surfaces are separated with hairline
+  rules rather than drop shadows.
+*/
+
+@theme {
+  --font-display: "Fraunces", ui-serif, Georgia, serif;
+  --font-body: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+
+  /* Ledger palette — described once here, consumed as semantic tokens below */
+  --color-emerald-50: #eaf3ef;
+  --color-emerald-100: #cfe6dc;
+  --color-emerald-400: #2c8a72;
+  --color-emerald-500: #1f6f5c;
+  --color-emerald-600: #175646;
+  --color-emerald-900: #0f3229;
+
+  --color-wine-50: #f7e9ea;
+  --color-wine-100: #edcdd0;
+  --color-wine-400: #b14b57;
+  --color-wine-500: #9a3b46;
+  --color-wine-600: #7a2e37;
+  --color-wine-900: #401920;
+
+  --color-brass-50: #faf3e4;
+  --color-brass-100: #f0e0bb;
+  --color-brass-400: #cda24f;
+  --color-brass-500: #b8892f;
+  --color-brass-600: #8f6a22;
+
+  --color-ink-50: #f4f5f4;
+  --color-ink-100: #e3e6e3;
+  --color-ink-200: #c7cdc7;
+  --color-ink-300: #9aa39c;
+  --color-ink-400: #6b756d;
+  --color-ink-500: #4d5650;
+  --color-ink-600: #384039;
+  --color-ink-700: #2a3128;
+  --color-ink-800: #1c2621;
+  --color-ink-900: #161f1a;
+  --color-ink-950: #0f1512;
+
+  --color-paper-0: #ffffff;
+  --color-paper-50: #f4f6f3;
+  --color-paper-100: #eaeee8;
+
+  --shadow-ledger: 0 1px 0 0 var(--color-ink-200);
+
+  --animate-rise: rise 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-fade-in: fade-in 0.25s ease-out;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+}
+
+/*
+  Semantic tokens: every component references --surface / --ink / --border
+  etc. rather than a raw palette color, so the light ↔ dark swap below is
+  the *only* place theme switching happens.
+*/
+:root {
+  --bg: var(--color-paper-100);
+  --surface: var(--color-paper-0);
+  --surface-raised: var(--color-paper-0);
+  --border: var(--color-ink-200);
+  --border-strong: var(--color-ink-300);
+  --text: var(--color-ink-900);
+  --text-muted: var(--color-ink-500);
+  --text-faint: var(--color-ink-400);
+  --accent: var(--color-emerald-500);
+  --accent-strong: var(--color-emerald-600);
+  --accent-soft: var(--color-emerald-50);
+  --positive: var(--color-emerald-500);
+  --positive-soft: var(--color-emerald-50);
+  --negative: var(--color-wine-500);
+  --negative-soft: var(--color-wine-50);
+  --warning: var(--color-brass-500);
+  --warning-soft: var(--color-brass-50);
+  --focus-ring: var(--color-emerald-400);
+  color-scheme: light;
+}
+
+.dark {
+  --bg: var(--color-ink-950);
+  --surface: var(--color-ink-900);
+  --surface-raised: var(--color-ink-800);
+  --border: var(--color-ink-700);
+  --border-strong: var(--color-ink-600);
+  --text: var(--color-ink-50);
+  --text-muted: var(--color-ink-300);
+  --text-faint: var(--color-ink-400);
+  --accent: var(--color-emerald-400);
+  --accent-strong: var(--color-emerald-100);
+  --accent-soft: var(--color-ink-800);
+  --positive: var(--color-emerald-400);
+  --positive-soft: var(--color-ink-800);
+  --negative: #d3707a;
+  --negative-soft: var(--color-ink-800);
+  --warning: var(--color-brass-400);
+  --warning-soft: var(--color-ink-800);
+  --focus-ring: var(--color-emerald-400);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-text-faint: var(--text-faint);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-soft: var(--accent-soft);
+  --color-positive: var(--positive);
+  --color-positive-soft: var(--positive-soft);
+  --color-negative: var(--negative);
+  --color-negative-soft: var(--negative-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  html {
+    color-scheme: light dark;
+  }
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection {
+    background-color: var(--color-accent);
+    color: var(--color-paper-0);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+  /* Tabular, right-aligned monospace figures for every amount in the app. */
+  .figure {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+    letter-spacing: -0.01em;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
