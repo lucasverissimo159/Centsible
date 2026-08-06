@@ -8,10 +8,10 @@
 ![Vitest](https://img.shields.io/badge/tested%20with-Vitest-6E9F18?logo=vitest&logoColor=white)
 ![License](https://img.shields.io/badge/license-View--Only-red)
 
-> ⚠️ **Repositório disponibilizado apenas para portfólio.** O código pode
-> ser visualizado, mas **não** pode ser copiado, baixado, usado ou
-> reaproveitado em outros projetos. Veja a seção [License](#license) e o
-> arquivo [`LICENSE`](./LICENSE).
+> ⚠️ **Repository available for portfolio purposes only.** The code can
+> be viewed, but **cannot** be copied, downloaded, used, or
+> reused in other projects. See the [License](#license) section and the
+> [`LICENSE`](./LICENSE) file.
 
 ![Centsible dashboard](docs/screenshots/dashboard-light.png)
 
