@@ -1,4 +1,4 @@
-import { useRef, type ChangeEvent } from 'react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { Download, Moon, Sun, Upload } from 'lucide-react';
 import { useApp } from '@/store/AppContext';
 import { useToast } from '@/hooks/useToast';
@@ -6,6 +6,8 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { FieldWrapper, Select } from '@/components/ui/Field';
 import { downloadTextFile } from '@/domain/importExport';
+import { validateAppState } from '@/domain/validation';
+import { clearApiSession, fetchRemoteState, fetchUsers, getCurrentUserRole, hasApiSession, updateUserRole, type OrganizationUser } from '@/api/client';
 import type { AppState } from '@/types';
 
 const CURRENCY_OPTIONS: { code: string; locale: string; label: string }[] = [
@@ -18,25 +20,35 @@ const CURRENCY_OPTIONS: { code: string; locale: string; label: string }[] = [
   { code: 'AUD', locale: 'en-AU', label: 'Australian Dollar (AUD)' },
 ];
 
-function isPlausibleBackup(value: unknown): value is AppState {
-  if (typeof value !== 'object' || value === null) return false;
-  const v = value as Record<string, unknown>;
-  return (
-    Array.isArray(v.transactions) &&
-    Array.isArray(v.categories) &&
-    Array.isArray(v.budgets) &&
-    Array.isArray(v.recurringRules) &&
-    typeof v.settings === 'object' &&
-    v.settings !== null
-  );
-}
-
 export function SettingsPage() {
   const { state, updateSettings, resetToDemoData, resetToEmpty, restoreFromBackup } = useApp();
   const { showToast } = useToast();
   const restoreInputRef = useRef<HTMLInputElement>(null);
+  const [users, setUsers] = useState<OrganizationUser[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
 
   const isDark = state.settings.theme === 'dark';
+  const apiSession = hasApiSession();
+  const currentRole = getCurrentUserRole();
+  const canManageUsers = currentRole === 'OWNER' || currentRole === 'ADMIN';
+  const isDevEnvironment = import.meta.env.DEV || window.location.hostname === 'localhost';
+
+  useEffect(() => {
+    if (!apiSession || !canManageUsers) return;
+
+    async function loadUsers() {
+      try {
+        setLoadingUsers(true);
+        setUsers(await fetchUsers());
+      } catch (error) {
+        showToast({ text: error instanceof Error ? error.message : 'Could not load team members.', tone: 'danger' });
+      } finally {
+        setLoadingUsers(false);
+      }
+    }
+
+    void loadUsers();
+  }, [apiSession, canManageUsers, showToast]);
 
   function handleCurrencyChange(code: string) {
     const option = CURRENCY_OPTIONS.find((c) => c.code === code);
@@ -58,13 +70,15 @@ export function SettingsPage() {
 
     try {
       const parsed: unknown = JSON.parse(await file.text());
-      if (!isPlausibleBackup(parsed)) throw new Error('Unexpected file shape');
+      const validation = validateAppState(parsed);
+      if (!validation.valid) throw new Error(validation.errors.slice(0, 2).join(' '));
       const confirmed = window.confirm('Restore from this backup? Your current data will be replaced. This cannot be undone.');
       if (!confirmed) return;
-      restoreFromBackup(parsed);
+      restoreFromBackup(parsed as AppState);
       showToast({ text: 'Backup restored.', tone: 'success' });
-    } catch {
-      showToast({ text: "That file doesn't look like a valid Centsible backup.", tone: 'danger' });
+    } catch (error) {
+      const detail = error instanceof Error ? ` ${error.message}` : '';
+      showToast({ text: `That file isn't a valid Centsible backup.${detail}`, tone: 'danger' });
     }
   }
 
@@ -80,6 +94,25 @@ export function SettingsPage() {
     if (!confirmed) return;
     resetToEmpty();
     showToast({ text: 'All data cleared.', tone: 'default' });
+  }
+
+  async function handleSyncFromServer() {
+    try {
+      restoreFromBackup(await fetchRemoteState(state));
+      showToast({ text: 'Server data synchronized.', tone: 'success' });
+    } catch (error) {
+      showToast({ text: error instanceof Error ? error.message : 'Could not synchronize server data.', tone: 'danger' });
+    }
+  }
+
+  async function handleRoleChange(userId: string, nextRole: OrganizationUser['role']) {
+    try {
+      const updatedUser = await updateUserRole(userId, nextRole);
+      setUsers((currentUsers) => currentUsers.map((user) => (user.id === updatedUser.id ? updatedUser : user)));
+      showToast({ text: `${updatedUser.email} is now ${updatedUser.role}.`, tone: 'success' });
+    } catch (error) {
+      showToast({ text: error instanceof Error ? error.message : 'Could not update user role.', tone: 'danger' });
+    }
   }
 
   return (
@@ -127,6 +160,39 @@ export function SettingsPage() {
         </div>
       </Card>
 
+      {canManageUsers && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Team access</CardTitle>
+          </CardHeader>
+          <div className="flex flex-col gap-3">
+            {loadingUsers ? (
+              <p className="text-sm text-text-muted">Loading team members...</p>
+            ) : users.length === 0 ? (
+              <p className="text-sm text-text-muted">No team members found for this organization.</p>
+            ) : (
+              users.map((user) => (
+                <div key={user.id} className="flex flex-col gap-2 rounded-md border border-border bg-surface-raised p-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-medium text-text">{user.email}</p>
+                    <p className="text-xs text-text-muted">{user.id}</p>
+                  </div>
+                  <div className="w-full sm:max-w-56">
+                    <Select value={user.role} onChange={(event) => void handleRoleChange(user.id, event.target.value as OrganizationUser['role'])}>
+                      <option value="OWNER">OWNER</option>
+                      <option value="ADMIN">ADMIN</option>
+                      <option value="MANAGER">MANAGER</option>
+                      <option value="OPERATOR">OPERATOR</option>
+                      <option value="VIEWER">VIEWER</option>
+                    </Select>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>Your data</CardTitle>
@@ -150,18 +216,38 @@ export function SettingsPage() {
             onChange={handleRestoreFile}
             aria-label="Restore backup from JSON file"
           />
+          {apiSession && (
+            <>
+              <Button variant="secondary" size="sm" onClick={() => void handleSyncFromServer()}>
+                Sync from server
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => {
+                  clearApiSession();
+                  showToast({ text: 'Signed out from server.', tone: 'default' });
+                }}
+              >
+                Sign out
+              </Button>
+            </>
+          )}
         </div>
 
-        <div className="mt-5 border-t border-border pt-5">
-          <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" size="sm" onClick={handleLoadDemoData}>
-              Load demo data
-            </Button>
-            <Button variant="danger" size="sm" onClick={handleClearAll}>
-              Clear all data
-            </Button>
+        {isDevEnvironment && (
+          <div className="mt-5 border-t border-border pt-5">
+            <p className="mb-2 text-xs font-medium uppercase tracking-[0.12em] text-text-muted">Developer tools</p>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="secondary" size="sm" onClick={handleLoadDemoData}>
+                Load demo data
+              </Button>
+              <Button variant="danger" size="sm" onClick={handleClearAll}>
+                Clear all data
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
       </Card>
 
       <p className="pb-2 text-center text-xs text-text-faint">

@@ -30,25 +30,33 @@ export function ImportExportBar({ transactions }: { transactions: Transaction[] 
     event.target.value = ''; // allow re-importing the same filename later
     if (!file) return;
 
-    const text = await file.text();
-    const { transactions: imported, skippedRows, unmatchedCategoryRows } = parseImportedTransactions(
-      text,
-      state.categories
-    );
+    try {
+      const text = await file.text();
+      const { transactions: imported, skippedRows, unmatchedCategoryRows, duplicateRows } = parseImportedTransactions(
+        text,
+        state.categories,
+        state.transactions
+      );
 
-    if (imported.length === 0) {
-      showToast({ text: "Couldn't find any valid rows in that file.", tone: 'danger' });
-      return;
+      if (imported.length === 0) {
+        showToast({ text: duplicateRows > 0 ? 'All rows were already imported.' : "Couldn't find any valid rows in that file.", tone: 'danger' });
+        return;
+      }
+
+      importTransactions(imported);
+
+      const parts = [`Imported ${imported.length} transaction${imported.length === 1 ? '' : 's'}.`];
+      if (skippedRows > 0) parts.push(`Skipped ${skippedRows} unreadable row${skippedRows === 1 ? '' : 's'}.`);
+      if (unmatchedCategoryRows > 0) {
+        parts.push(`${unmatchedCategoryRows} row${unmatchedCategoryRows === 1 ? '' : 's'} had an unrecognized category, filed under Other.`);
+      }
+      if (duplicateRows > 0) {
+        parts.push(`Skipped ${duplicateRows} duplicate row${duplicateRows === 1 ? '' : 's'}.`);
+      }
+      showToast({ text: parts.join(' '), tone: skippedRows > 0 ? 'default' : 'success' });
+    } catch {
+      showToast({ text: 'Could not read that CSV file. Please try another file.', tone: 'danger' });
     }
-
-    importTransactions(imported);
-
-    const parts = [`Imported ${imported.length} transaction${imported.length === 1 ? '' : 's'}.`];
-    if (skippedRows > 0) parts.push(`Skipped ${skippedRows} unreadable row${skippedRows === 1 ? '' : 's'}.`);
-    if (unmatchedCategoryRows > 0) {
-      parts.push(`${unmatchedCategoryRows} row${unmatchedCategoryRows === 1 ? '' : 's'} had an unrecognized category, filed under Other.`);
-    }
-    showToast({ text: parts.join(' '), tone: skippedRows > 0 ? 'default' : 'success' });
   }
 
   return (

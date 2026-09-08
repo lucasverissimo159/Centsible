@@ -1,5 +1,6 @@
-import { Menu, Moon, Plus, Redo2, Sun, Undo2 } from 'lucide-react';
-import { useLocation } from 'react-router';
+import { LogOut, Menu, Moon, Plus, Redo2, Sun, Undo2 } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router';
+import { clearApiSession } from '@/api/client';
 import { useApp } from '@/store/AppContext';
 import { Button } from '@/components/ui/Button';
 
@@ -25,12 +26,18 @@ interface HeaderProps {
 export function Header({ onMenuClick, onAddTransaction }: HeaderProps) {
   const { canUndo, canRedo, undo, redo, state, updateSettings } = useApp();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const routeInfo = ROUTE_TITLES[location.pathname];
   const title = routeInfo?.title ?? getGreeting();
   const subtitle = routeInfo?.subtitle ?? "Here's where your money stands.";
 
   const isDark = state.settings.theme === 'dark';
+
+  function handleSignOut() {
+    clearApiSession();
+    navigate('/login', { replace: true });
+  }
 
   return (
     <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-border bg-surface/90 px-4 py-4 backdrop-blur sm:px-6">
@@ -76,6 +83,15 @@ export function Header({ onMenuClick, onAddTransaction }: HeaderProps) {
           className="rounded-md p-2 text-text-muted transition-colors hover:bg-surface-raised hover:text-text"
         >
           {isDark ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
+
+        <button
+          onClick={handleSignOut}
+          aria-label="Sign out"
+          title="Sign out"
+          className="rounded-md p-2 text-text-muted transition-colors hover:bg-surface-raised hover:text-text"
+        >
+          <LogOut size={18} />
         </button>
 
         <Button variant="primary" size="sm" icon={<Plus size={16} />} onClick={onAddTransaction}>

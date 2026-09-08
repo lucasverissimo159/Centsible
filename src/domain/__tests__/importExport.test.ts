@@ -60,4 +60,22 @@ describe('parseImportedTransactions — resilience', () => {
     expect(result.transactions[0]?.categoryId).toBe('cat-other');
     expect(result.unmatchedCategoryRows).toBe(1);
   });
+
+  it('skips rows already present and duplicate rows within the same file', () => {
+    const existing: Transaction = {
+      id: 'existing',
+      type: 'expense',
+      amountCents: 1000,
+      categoryId: 'cat-groceries',
+      description: 'Lunch',
+      date: '2026-03-05',
+      createdAt: '2026-03-05T00:00:00.000Z',
+      updatedAt: '2026-03-05T00:00:00.000Z',
+    };
+    const csv = 'date,type,category,description,amount\n2026-03-05,expense,Groceries,Lunch,10.00\n2026-03-06,expense,Groceries,Lunch,10.00\n2026-03-06,expense,Groceries,Lunch,10.00';
+    const result = parseImportedTransactions(csv, categories, [existing]);
+
+    expect(result.transactions).toHaveLength(1);
+    expect(result.duplicateRows).toBe(2);
+  });
 });

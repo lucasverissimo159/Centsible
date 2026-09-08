@@ -101,6 +101,11 @@ npm run dev
 
 Open the printed local URL. The app seeds itself with demo data on first run — nothing to configure.
 
+Demo login credentials (seeded account):
+
+- Email: `admin@centsible.local`
+- Password: `ChangeMe123!`
+
 | Command | Does |
 |---|---|
 | `npm run dev` | Start the dev server |
@@ -110,6 +115,31 @@ Open the printed local URL. The app seeds itself with demo data on first run —
 | `npm run test:run` | Run tests once |
 | `npm run test:coverage` | Run tests with a coverage report |
 | `npm run lint` | Run oxlint |
+
+### Full-stack mode
+
+The app can still run offline with `localStorage`, but production data can be served by the TypeScript API in `server/` and PostgreSQL through Prisma.
+
+```bash
+copy .env.example .env
+docker compose up -d postgres
+npm run db:generate
+npm run db:migrate -- --name init
+npm run db:seed
+npm run server:dev
+```
+
+In another terminal, run `npm run dev`. Open `/login` to create an organization or sign in. The Settings page can synchronize the authenticated organization's categories, transactions, budgets, and recurring rules. API integration tests run without Docker; PostgreSQL migration execution requires Docker or another PostgreSQL instance.
+
+Backend commands:
+
+| Command | Does |
+|---|---|
+| `npm run server:dev` | Start the API with watch mode |
+| `npm run build:server` | Type-check the backend and Prisma adapter |
+| `npm run db:migrate` | Create/apply a development migration |
+| `npm run db:deploy` | Apply committed migrations in deployment |
+| `npm run db:seed` | Create the demo organization and admin user |
 
 ## Testing
 

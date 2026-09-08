@@ -1,0 +1,160 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id             String          @id @default(cuid())
+  name           String
+  createdAt      DateTime        @default(now())
+  memberships    Membership[]
+  categories     Category[]
+  transactions   Transaction[]
+  budgets        Budget[]
+  recurringRules RecurringRule[]
+  auditEvents    AuditEvent[]
+  importBatches  ImportBatch[]
+}
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  passwordHash String
+  createdAt    DateTime     @default(now())
+  memberships  Membership[]
+  auditEvents  AuditEvent[]
+}
+
+model Membership {
+  id             String       @id @default(cuid())
+  userId         String
+  organizationId String
+  role           Role         @default(OPERATOR)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MANAGER
+  OPERATOR
+  VIEWER
+}
+
+model Category {
+  id             String          @id @default(cuid())
+  organizationId String
+  name           String
+  color          String
+  icon           String
+  kind           CategoryKind
+  isDefault      Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  transactions   Transaction[]
+  budgets        Budget[]
+  recurringRules RecurringRule[]
+
+  @@unique([organizationId, name])
+  @@index([organizationId])
+}
+
+enum CategoryKind {
+  income
+  expense
+  both
+}
+
+enum TransactionType {
+  income
+  expense
+}
+
+model Transaction {
+  id              String          @id @default(cuid())
+  organizationId  String
+  type            TransactionType
+  amountCents     Int
+  categoryId      String
+  description     String
+  date            String
+  notes           String?
+  recurringRuleId String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  organization    Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  category        Category        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  recurringRule   RecurringRule?  @relation(fields: [recurringRuleId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, date])
+  @@index([organizationId, categoryId])
+}
+
+model RecurringRule {
+  id                   String          @id @default(cuid())
+  organizationId       String
+  type                 TransactionType
+  amountCents          Int
+  categoryId           String
+  description          String
+  frequency            String
+  interval             Int
+  startDate            String
+  endDate              String?
+  lastMaterializedDate String?
+  isPaused             Boolean         @default(false)
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+  organization         Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  category             Category        @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  transactions         Transaction[]
+
+  @@index([organizationId])
+}
+
+model Budget {
+  id                String       @id @default(cuid())
+  organizationId    String
+  categoryId        String
+  monthlyLimitCents Int
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+  organization      Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  category          Category     @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, categoryId])
+}
+
+model AuditEvent {
+  id             String       @id @default(cuid())
+  organizationId String
+  userId         String
+  action         String
+  entityType     String
+  entityId       String?
+  metadata       Json
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, createdAt])
+}
+
+model ImportBatch {
+  id             String       @id @default(cuid())
+  organizationId String
+  idempotencyKey String
+  createdAt      DateTime     @default(now())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, idempotencyKey])
+}

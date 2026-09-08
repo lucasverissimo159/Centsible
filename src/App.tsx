@@ -1,8 +1,9 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Route, Routes } from 'react-router';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router';
 import { AppProvider } from '@/store/AppContext';
 import { ToastProvider } from '@/hooks/useToast';
 import { Layout } from '@/components/layout/Layout';
+import { hasApiSession } from '@/api/client';
 
 const DashboardPage = lazy(() => import('@/pages/DashboardPage').then((m) => ({ default: m.DashboardPage })));
 const TransactionsPage = lazy(() =>
@@ -11,6 +12,7 @@ const TransactionsPage = lazy(() =>
 const BudgetsPage = lazy(() => import('@/pages/BudgetsPage').then((m) => ({ default: m.BudgetsPage })));
 const CategoriesPage = lazy(() => import('@/pages/CategoriesPage').then((m) => ({ default: m.CategoriesPage })));
 const SettingsPage = lazy(() => import('@/pages/SettingsPage').then((m) => ({ default: m.SettingsPage })));
+const LoginPage = lazy(() => import('@/pages/LoginPage').then((m) => ({ default: m.LoginPage })));
 
 function PageFallback() {
   return (
@@ -24,13 +26,31 @@ function PageFallback() {
   );
 }
 
+function RequireAuth({ children }: { children: React.ReactNode }) {
+  return hasApiSession() ? <>{children}</> : <Navigate to="/login" replace />;
+}
+
 export function App() {
   return (
     <ToastProvider>
       <AppProvider>
         <BrowserRouter>
           <Routes>
-            <Route element={<Layout />}>
+            <Route
+              path="login"
+              element={
+                <Suspense fallback={<PageFallback />}>
+                  <LoginPage />
+                </Suspense>
+              }
+            />
+            <Route
+              element={
+                <RequireAuth>
+                  <Layout />
+                </RequireAuth>
+              }
+            >
               <Route
                 index
                 element={

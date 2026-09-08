@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: centsible
+      POSTGRES_PASSWORD: centsible
+      POSTGRES_DB: centsible
+    ports:
+      - "5433:5432"
+    volumes:
+      - centsible-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U centsible -d centsible"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  centsible-postgres:

@@ -23,6 +23,15 @@ const undoableAppReducer = undoable(appReducer, {
 });
 
 function resolveInitialState(): AppState {
+  const hasSession = typeof window !== 'undefined' && Boolean(window.localStorage.getItem('centsible:api-token'));
+
+  if (!hasSession) {
+    if (typeof window !== 'undefined') {
+      clearPersistedState();
+    }
+    return createEmptyState();
+  }
+
   return loadPersistedState() ?? createSeedState(new Date());
 }
 

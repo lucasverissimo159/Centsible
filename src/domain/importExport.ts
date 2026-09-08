@@ -33,6 +33,18 @@ export interface ImportResult {
   transactions: Transaction[];
   skippedRows: number;
   unmatchedCategoryRows: number;
+  duplicateRows: number;
+}
+
+export function transactionFingerprint(transaction: Pick<Transaction, 'date' | 'type' | 'amountCents' | 'categoryId' | 'description' | 'notes'>): string {
+  return [
+    transaction.date,
+    transaction.type,
+    transaction.amountCents,
+    transaction.categoryId,
+    transaction.description.trim().toLowerCase(),
+    transaction.notes?.trim().toLowerCase() ?? '',
+  ].join('|');
 }
 
 /**
@@ -42,13 +54,19 @@ export interface ImportResult {
  * Unrecognized category names fall back to "Other" rather than failing the
  * whole row — a partial import you can clean up beats an all-or-nothing one.
  */
-export function parseImportedTransactions(csvText: string, categories: Category[]): ImportResult {
+export function parseImportedTransactions(
+  csvText: string,
+  categories: Category[],
+  existingTransactions: Transaction[] = []
+): ImportResult {
   const rows = parseCSVWithHeader(csvText);
   const categoryIdByName = new Map(categories.map((c) => [c.name.trim().toLowerCase(), c.id]));
 
   const transactions: Transaction[] = [];
   let skippedRows = 0;
   let unmatchedCategoryRows = 0;
+  let duplicateRows = 0;
+  const fingerprints = new Set(existingTransactions.map(transactionFingerprint));
   const now = new Date().toISOString();
 
   for (const row of rows) {
@@ -69,7 +87,7 @@ export function parseImportedTransactions(csvText: string, categories: Category[
     const matchedCategoryId = categoryIdByName.get(categoryNameRaw.toLowerCase());
     if (categoryNameRaw && !matchedCategoryId) unmatchedCategoryRows += 1;
 
-    transactions.push({
+    const transaction: Transaction = {
       id: generateId(),
       type,
       amountCents,
@@ -79,10 +97,17 @@ export function parseImportedTransactions(csvText: string, categories: Category[
       notes: (row.notes ?? row.Notes ?? '').trim() || undefined,
       createdAt: now,
       updatedAt: now,
-    });
+    };
+    const fingerprint = transactionFingerprint(transaction);
+    if (fingerprints.has(fingerprint)) {
+      duplicateRows += 1;
+      continue;
+    }
+    fingerprints.add(fingerprint);
+    transactions.push(transaction);
   }
 
-  return { transactions, skippedRows, unmatchedCategoryRows };
+  return { transactions, skippedRows, unmatchedCategoryRows, duplicateRows };
 }
 
 export function downloadTextFile(filename: string, content: string, mimeType: string): void {

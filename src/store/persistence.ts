@@ -1,4 +1,5 @@
 import type { AppState } from '@/types';
+import { isValidAppState } from '@/domain/validation';
 
 /**
  * Every real app's data shape changes over time. Writing the raw AppState
@@ -40,27 +41,13 @@ function runMigrations(envelope: PersistedEnvelope): unknown {
   return data;
 }
 
-/** Minimal structural check — enough to catch corrupted/foreign data without a full schema validator. */
-function isPlausibleAppState(value: unknown): value is AppState {
-  if (typeof value !== 'object' || value === null) return false;
-  const candidate = value as Record<string, unknown>;
-  return (
-    Array.isArray(candidate.transactions) &&
-    Array.isArray(candidate.categories) &&
-    Array.isArray(candidate.recurringRules) &&
-    Array.isArray(candidate.budgets) &&
-    typeof candidate.settings === 'object' &&
-    candidate.settings !== null
-  );
-}
-
 export function loadPersistedState(): AppState | null {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const envelope = JSON.parse(raw) as PersistedEnvelope;
     const migrated = runMigrations(envelope);
-    return isPlausibleAppState(migrated) ? migrated : null;
+    return isValidAppState(migrated) ? migrated : null;
   } catch (error) {
     console.error('Centsible: failed to load saved data, starting fresh.', error);
     return null;
@@ -77,5 +64,17 @@ export function persistState(state: AppState): void {
 }
 
 export function clearPersistedState(): void {
-  window.localStorage.removeItem(STORAGE_KEY);
+  const clearStorage = (storage: Storage) => {
+    try {
+      const keys = Array.from({ length: storage.length }, (_, index) => storage.key(index)).filter(Boolean) as string[];
+      for (const key of keys) {
+        storage.removeItem(key);
+      }
+    } catch (error) {
+      console.error('Centsible: failed to clear storage.', error);
+    }
+  };
+
+  clearStorage(window.localStorage);
+  clearStorage(window.sessionStorage);
 }
